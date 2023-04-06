@@ -6,4 +6,127 @@
     android:layout_height="match_parent"
     tools:context=".ui.HomeActivity">
 
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/background_image"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:adjustViewBounds="true"
+        android:scaleType="fitXY"
+        app:srcCompat="@mipmap/background_one" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideLineTop"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent=".1"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/weather_card"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/_100sdp"
+        android:layout_marginHorizontal="@dimen/_16sdp"
+        app:cardCornerRadius="@dimen/_16sdp"
+        app:layout_constraintTop_toBottomOf="@id/guideLineTop">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/weather_icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/weather_temp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:srcCompat="@drawable/sunny" />
+
+            <TextView
+                android:id="@+id/weather_temp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/poppins_medium"
+                android:textSize="@dimen/_24ssp"
+                app:layout_constraintBottom_toBottomOf="@id/weather_icon"
+                app:layout_constraintEnd_toStartOf="@id/linear_layout"
+                app:layout_constraintStart_toEndOf="@id/weather_icon"
+                app:layout_constraintTop_toTopOf="@id/weather_icon"
+                tools:text="11" />
+
+            <LinearLayout
+                android:id="@+id/linear_layout"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="vertical"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/weather_temp">
+
+                <TextView
+                    android:id="@+id/weather_day"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/poppins_medium"
+                    android:textSize="@dimen/_16ssp"
+                    tools:text="monday"
+
+                    />
+
+                <TextView
+                    android:id="@+id/weather_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:fontFamily="@font/poppins_medium"
+                    android:textSize="@dimen/_16ssp"
+                    tools:text="sunny" />
+
+            </LinearLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.cardview.widget.CardView>
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/select_clothes_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/_40sdp"
+        android:layout_marginTop="@dimen/_48sdp"
+        android:layout_marginBottom="@dimen/_16sdp"
+        android:background="@drawable/shape_button"
+        android:text="Select Clothes"
+        android:textColor="@color/background"
+        app:layout_constraintBottom_toTopOf="@id/clothes_card"
+        app:layout_constraintTop_toBottomOf="@id/weather_card" />
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/clothes_card"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginHorizontal="@dimen/_16sdp"
+        app:cardCornerRadius="@dimen/_16sdp"
+        app:layout_constraintBottom_toTopOf="@id/guideLine_bottom"
+        app:layout_constraintTop_toBottomOf="@id/select_clothes_button">
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/clothes_image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="@dimen/_16sdp"
+            app:srcCompat="@mipmap/background_two" />
+
+    </androidx.cardview.widget.CardView>
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideLine_bottom"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent=".9"
+        app:layout_constraintTop_toTopOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
