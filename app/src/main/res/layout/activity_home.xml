@@ -14,51 +14,46 @@
         android:scaleType="fitXY"
         app:srcCompat="@mipmap/background_two" />
 
-    <com.google.android.material.appbar.AppBarLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:background="@color/transparent"
-        android:elevation="0dp"
         app:layout_constraintHeight_percent=".1"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        android:orientation="horizontal"
+        android:weightSum="4"
+        >
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/_16sdp"
+            android:fontFamily="@font/poppins_semibold"
+            android:text="@string/home"
+            android:textColor="@color/background"
+            android:textSize="@dimen/_20ssp"
+            android:layout_weight="1"
+            android:layout_gravity="center_vertical"
+            />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/_16sdp"
-                android:fontFamily="@font/poppins_semibold"
-                android:text="@string/home"
-                android:textColor="@color/background"
-                android:textSize="@dimen/_20ssp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="@dimen/_16sdp"
+            android:hint="@string/search_for_country"
+            android:paddingVertical="@dimen/_8sdp"
+            app:boxStrokeWidth="0dp"
+            android:layout_gravity="center_vertical"
+            android:layout_weight="3">
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="0dp"
+            <androidx.appcompat.widget.AppCompatEditText
+                android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_marginEnd="@dimen/_16sdp"
-                android:hint="@string/search_for_country"
-                android:paddingVertical="@dimen/_8sdp"
-                app:boxStrokeWidth="0dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintWidth_percent=".6">
+                android:background="@drawable/shape_search_bar"
+                android:drawableEnd="@drawable/ic_search" />
 
-                <androidx.appcompat.widget.AppCompatEditText
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="@drawable/shape_search_bar"
-                    android:drawableEnd="@drawable/ic_search" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-            </com.google.android.material.textfield.TextInputLayout>
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-    </com.google.android.material.appbar.AppBarLayout>
+    </LinearLayout>
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideLineTop"
@@ -163,7 +158,10 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_margin="@dimen/_16sdp"
-            app:srcCompat="@mipmap/background_two" />
+            app:srcCompat="@mipmap/background_two"
+            android:adjustViewBounds="true"
+            android:scaleType="fitXY"
+            />
 
     </androidx.cardview.widget.CardView>
 
