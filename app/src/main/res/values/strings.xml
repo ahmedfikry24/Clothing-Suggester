@@ -4,4 +4,5 @@
     <string name="search_for_country">search for country</string>
     <string name="select_your_clothes_please">select your clothes please</string>
     <string name="select_clothes">Select Clothes</string>
+    <string name="image_add_done">image has been added successfully</string>
 </resources>

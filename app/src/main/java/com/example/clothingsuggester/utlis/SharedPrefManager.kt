@@ -12,10 +12,15 @@ object SharedPrefManager {
         return sharedPreference!!
     }
 
-    var imageNumber: Int?
-        get() = sharedPreference?.getInt(Constant.KEY_IMAGE_NUMBER, 0)
+    var latSummerImageNumber: Int?
+        get() = sharedPreference?.getInt(Constant.KEY_SUMMER_IMAGE_NUMBER, 100)
         set(value) {
-            sharedPreference?.edit()?.putInt(Constant.KEY_IMAGE_NUMBER, value!!)?.apply()
+            sharedPreference?.edit()?.putInt(Constant.KEY_SUMMER_IMAGE_NUMBER, value!!)?.apply()
+        }
+    var lastWinterImageNumber: Int?
+        get() = sharedPreference?.getInt(Constant.KEY_WINTER_IMAGE_NUMBER, 0)
+        set(value) {
+            sharedPreference?.edit()?.putInt(Constant.KEY_WINTER_IMAGE_NUMBER, value!!)?.apply()
         }
     var isSelectedImage: Boolean?
         get() = sharedPreference?.getBoolean(Constant.KEY_IS_SELECTED_IMAGE, false)
