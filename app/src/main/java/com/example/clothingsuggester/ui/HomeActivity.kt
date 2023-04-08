@@ -19,15 +19,27 @@ class HomeActivity : AppCompatActivity() {
     private var imageNumber: Int = 0
     private var isSelectedImage = false
 
-    //permission
-    private val requestPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    //permissions
+    private val requestMediaPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            if (it) {
+                pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            }
+        }
+
+    private val requestLocationPermission =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
+    private val pickImageLauncher =
+        registerForActivityResult(ActivityResultContracts.PickVisualMedia()) {
+            if (it != null) saveClothes(it)
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding!!.root)
 
+        checkLocationPermission()
         initValues()
         isSelectedImageBefore()
         initOnClickListeners()
@@ -35,9 +47,9 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun initValues() {
-        SharedPrefManager.grtInit(this@HomeActivity)
-        isSelectedImage = SharedPrefManager.isSelectedImage!!
+        SharedPrefManager.getInit(this@HomeActivity)
         imageNumber = SharedPrefManager.imageNumber ?: 0
+        isSelectedImage = SharedPrefManager.isSelectedImage!!
     }
 
     private fun isSelectedImageBefore() {
@@ -53,43 +65,50 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun initOnClickListeners() {
-        val pickImageLauncher =
-            registerForActivityResult(ActivityResultContracts.PickVisualMedia()) {
-                if (it != null)
-                    saveClothes(it)
-            }
 
         binding!!.selectClothesButton.setOnClickListener {
             if (checkMediaPermission()) {
                 pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
             } else {
-                requestPermission.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                requestMediaPermission.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
             }
         }
     }
 
     private fun checkMediaPermission(): Boolean {
         return ActivityCompat.checkSelfPermission(
-            this@HomeActivity,
-            android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+            this@HomeActivity, android.Manifest.permission.WRITE_EXTERNAL_STORAGE
         ) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun saveClothes(image: Uri) {
-        SharedPrefManager.grtInit(this@HomeActivity).edit()
-            .putString(
-                if (imageNumber == 0) imageNumber.toString() else (imageNumber + 1).toString(),
-                image.toString()
-            ).apply()
-        if (!isSelectedImage)
-            SharedPrefManager.isSelectedImage = true
+        SharedPrefManager.getInit(this@HomeActivity).edit().putString(
+            if (imageNumber == 0) imageNumber.toString() else (imageNumber + 1).toString(),
+            image.toString()
+        ).apply()
+        if (!isSelectedImage) SharedPrefManager.isSelectedImage = true
     }
 
     private fun loadClothes() {
         for (i in 0..imageNumber) {
-            val image = SharedPrefManager.grtInit(this@HomeActivity).getString(i.toString(), null)
-            if (!image.isNullOrBlank())
-                clothesList.add(image)
+            val image = SharedPrefManager.getInit(this@HomeActivity).getString(i.toString(), null)
+            if (!image.isNullOrBlank()) clothesList.add(image)
+        }
+    }
+
+    private fun checkLocationPermission() {
+        if (!(ActivityCompat.checkSelfPermission(
+                this@HomeActivity, android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this@HomeActivity, android.Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED)
+        ) {
+            requestLocationPermission.launch(
+                arrayOf(
+                    android.Manifest.permission.ACCESS_FINE_LOCATION,
+                    android.Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
         }
     }
 
