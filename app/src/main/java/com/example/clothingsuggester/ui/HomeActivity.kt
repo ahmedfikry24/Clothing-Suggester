@@ -1,10 +1,15 @@
 package com.example.clothingsuggester.ui
 
 import android.app.AlertDialog
+import android.content.Context
 import android.content.DialogInterface
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationManager
 import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,11 +19,15 @@ import androidx.core.view.isVisible
 import com.example.clothingsuggester.R
 import com.example.clothingsuggester.databinding.ActivityHomeBinding
 import com.example.clothingsuggester.utlis.SharedPrefManager
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 
 class HomeActivity : AppCompatActivity() {
     private var binding: ActivityHomeBinding? = null
     private val summerClothesList = mutableListOf<String>()
     private val winterClothesList = mutableListOf<String>()
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+
 
     //shared pref values
     private var summerImageNumber: Int = 100
@@ -30,7 +39,11 @@ class HomeActivity : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
     private val requestLocationPermission =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            if (it) {
+                getCurrentLocation()
+            }
+        }
 
     // image pickers
     private var summerImagePicker =
@@ -49,8 +62,8 @@ class HomeActivity : AppCompatActivity() {
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding!!.root)
 
-        checkLocationPermission()
         initValues()
+        getCurrentLocation()
         isSelectedImageBefore()
         initOnClickListeners()
         loadClothes()
@@ -61,6 +74,7 @@ class HomeActivity : AppCompatActivity() {
         summerImageNumber = SharedPrefManager.latSummerImageNumber!!
         winterImageNumber = SharedPrefManager.lastWinterImageNumber!!
         isSelectedImage = SharedPrefManager.isSelectedImage!!
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this@HomeActivity)
     }
 
     private fun isSelectedImageBefore() {
@@ -118,11 +132,7 @@ class HomeActivity : AppCompatActivity() {
             SharedPrefManager.lastWinterImageNumber = winterImageNumber + 1
             winterImageNumber = SharedPrefManager.lastWinterImageNumber!!
 
-            Toast.makeText(
-                this@HomeActivity,
-                getString(R.string.image_add_done),
-                Toast.LENGTH_SHORT
-            ).show()
+            showToast()
 
         } else {
             SharedPrefManager.getInit(this@HomeActivity).edit().putString(
@@ -133,11 +143,7 @@ class HomeActivity : AppCompatActivity() {
             SharedPrefManager.latSummerImageNumber = summerImageNumber + 1
             summerImageNumber = SharedPrefManager.latSummerImageNumber!!
 
-            Toast.makeText(
-                this@HomeActivity,
-                getString(R.string.image_add_done),
-                Toast.LENGTH_SHORT
-            ).show()
+            showToast()
         }
         if (!isSelectedImage) SharedPrefManager.isSelectedImage = true
     }
@@ -156,18 +162,39 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-    private fun checkLocationPermission() {
-        if (!(ActivityCompat.checkSelfPermission(
-                this@HomeActivity, android.Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                this@HomeActivity, android.Manifest.permission.ACCESS_COARSE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED)
-        ) {
+    private fun showToast() {
+        Toast.makeText(
+            this@HomeActivity,
+            getString(R.string.image_add_done),
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    private fun checkLocationPermission(): Boolean {
+        return ActivityCompat.checkSelfPermission(
+            this@HomeActivity, android.Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun getCurrentLocation() {
+        if (checkLocationPermission()) {
+            fusedLocationClient.lastLocation
+                .addOnSuccessListener { location: Location? ->
+                    if (location != null) {
+
+                    } else {
+                        val locationManager =
+                            getSystemService(Context.LOCATION_SERVICE) as LocationManager
+
+                        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                            val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                            startActivity(intent)
+                        }
+                    }
+                }
+        } else {
             requestLocationPermission.launch(
-                arrayOf(
-                    android.Manifest.permission.ACCESS_FINE_LOCATION,
-                    android.Manifest.permission.ACCESS_COARSE_LOCATION
-                )
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
             )
         }
     }
