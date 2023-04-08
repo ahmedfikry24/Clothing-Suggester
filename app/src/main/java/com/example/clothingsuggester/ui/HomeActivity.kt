@@ -13,11 +13,13 @@ import com.example.clothingsuggester.utlis.SharedPrefManager
 
 class HomeActivity : AppCompatActivity() {
     private var binding: ActivityHomeBinding? = null
-    private var imageNumber: Int = 0
     private val clothesList = mutableListOf<String>()
+
+    //shared pref values
+    private var imageNumber: Int = 0
     private var isSelectedImage = false
 
-    //permissions
+    //permission
     private val requestPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
@@ -26,49 +28,19 @@ class HomeActivity : AppCompatActivity() {
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding!!.root)
 
-        loadImageNumber()
+        initValues()
+        isSelectedImageBefore()
         initOnClickListeners()
         loadClothes()
-        isSelectedImageBefore()
     }
 
-
-    private fun initOnClickListeners() {
-        val pickImageLauncher =
-            registerForActivityResult(ActivityResultContracts.PickVisualMedia()) {
-                if (it != null)
-                    saveClothes(it)
-            }
-
-        binding!!.selectClothesButton.setOnClickListener {
-            if (ActivityCompat.checkSelfPermission(
-                    this@HomeActivity,
-                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-                ) == PackageManager.PERMISSION_GRANTED
-            ) {
-                pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-            } else {
-                requestPermission.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            }
-        }
-    }
-
-    private fun loadImageNumber(): Int {
+    private fun initValues() {
+        SharedPrefManager.grtInit(this@HomeActivity)
+        isSelectedImage = SharedPrefManager.isSelectedImage!!
         imageNumber = SharedPrefManager.imageNumber ?: 0
-        return imageNumber
-    }
-
-    private fun saveClothes(image: Uri) {
-        SharedPrefManager.grtInit(this@HomeActivity).edit()
-            .putString(
-                if (loadImageNumber() == 0) imageNumber.toString() else (imageNumber + 1).toString(),
-                image.toString()
-            ).apply()
-        SharedPrefManager.isSelectedImage = true
     }
 
     private fun isSelectedImageBefore() {
-        isSelectedImage = SharedPrefManager.isSelectedImage!!
         if (isSelectedImage == true) {
 
             binding!!.clothesImage.isVisible = true
@@ -80,16 +52,45 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
+    private fun initOnClickListeners() {
+        val pickImageLauncher =
+            registerForActivityResult(ActivityResultContracts.PickVisualMedia()) {
+                if (it != null)
+                    saveClothes(it)
+            }
+
+        binding!!.selectClothesButton.setOnClickListener {
+            if (checkMediaPermission()) {
+                pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            } else {
+                requestPermission.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            }
+        }
+    }
+
+    private fun checkMediaPermission(): Boolean {
+        return ActivityCompat.checkSelfPermission(
+            this@HomeActivity,
+            android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun saveClothes(image: Uri) {
+        SharedPrefManager.grtInit(this@HomeActivity).edit()
+            .putString(
+                if (imageNumber == 0) imageNumber.toString() else (imageNumber + 1).toString(),
+                image.toString()
+            ).apply()
+        if (!isSelectedImage)
+            SharedPrefManager.isSelectedImage = true
+    }
+
     private fun loadClothes() {
-        for (i in 0..loadImageNumber()) {
+        for (i in 0..imageNumber) {
             val image = SharedPrefManager.grtInit(this@HomeActivity).getString(i.toString(), null)
             if (!image.isNullOrBlank())
                 clothesList.add(image)
         }
-    }
-
-    private fun getLocationPermission() {
-
     }
 
     override fun onDestroy() {
