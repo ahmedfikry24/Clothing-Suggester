@@ -18,15 +18,21 @@ import androidx.core.app.ActivityCompat
 import androidx.core.view.isVisible
 import com.example.clothingsuggester.R
 import com.example.clothingsuggester.databinding.ActivityHomeBinding
+import com.example.clothingsuggester.utlis.Constant
 import com.example.clothingsuggester.utlis.SharedPrefManager
+import com.example.clothingsuggester.utlis.weatherParser
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import okhttp3.*
+import org.json.JSONObject
+import java.io.IOException
 
 class HomeActivity : AppCompatActivity() {
     private var binding: ActivityHomeBinding? = null
     private val summerClothesList = mutableListOf<String>()
     private val winterClothesList = mutableListOf<String>()
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private val client = OkHttpClient()
 
 
     //shared pref values
@@ -54,7 +60,6 @@ class HomeActivity : AppCompatActivity() {
     private var winterImagePicker =
         registerForActivityResult(ActivityResultContracts.PickVisualMedia()) {
             if (it != null) saveClothes(it, true)
-
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,6 +68,7 @@ class HomeActivity : AppCompatActivity() {
         setContentView(binding!!.root)
 
         initValues()
+        checkGpsEnabled()
         getCurrentLocation()
         isSelectedImageBefore()
         initOnClickListeners()
@@ -115,7 +121,7 @@ class HomeActivity : AppCompatActivity() {
                             )
                         )
                     })
-                dialog.create().show()
+                dialog.show()
             } else {
                 requestMediaPermission.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
             }
@@ -176,12 +182,28 @@ class HomeActivity : AppCompatActivity() {
         ) == PackageManager.PERMISSION_GRANTED
     }
 
+    private fun checkGpsEnabled() {
+        if (checkLocationPermission()) {
+            val locationManager =
+                getSystemService(Context.LOCATION_SERVICE) as LocationManager
+
+            if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                startActivity(intent)
+            }
+        } else {
+            requestLocationPermission.launch(
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
+            )
+        }
+    }
+
     private fun getCurrentLocation() {
         if (checkLocationPermission()) {
             fusedLocationClient.lastLocation
                 .addOnSuccessListener { location: Location? ->
                     if (location != null) {
-
+                        getCurrentWeather(location.latitude, location.longitude)
                     } else {
                         val locationManager =
                             getSystemService(Context.LOCATION_SERVICE) as LocationManager
@@ -192,13 +214,33 @@ class HomeActivity : AppCompatActivity() {
                         }
                     }
                 }
-        } else {
-            requestLocationPermission.launch(
-                android.Manifest.permission.ACCESS_FINE_LOCATION,
-            )
         }
     }
 
+    private fun getCurrentWeather(Latitude: Double, Longitude: Double) {
+        val url = HttpUrl.Builder()
+            .scheme("https")
+            .host("api.openweathermap.org")
+            .addPathSegment("/data/2.5/weather")
+            .addQueryParameter("lat", "$Latitude")
+            .addQueryParameter("lon", "$Longitude")
+            .addQueryParameter("appid", Constant.API_OPEN_WEATHER_KEY)
+            .build()
+
+        val request = Request.Builder().url(url).build()
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                Toast.makeText(this@HomeActivity , "${e.message}",Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                response.body?.string().let {
+                    val responseResult = JSONObject(it!!).weatherParser()
+                }
+            }
+
+        })
+    }
     override fun onDestroy() {
         binding = null
         super.onDestroy()
