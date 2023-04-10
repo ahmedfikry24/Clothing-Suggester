@@ -27,4 +27,16 @@ object SharedPrefManager {
         set(value) {
             sharedPreference?.edit()?.putBoolean(Constant.KEY_IS_SELECTED_IMAGE, value!!)?.apply()
         }
+
+    var lastWinterImage: String?
+        get() = sharedPreference?.getString(Constant.KEY_LAST_WINTER_IMAGE, null)
+        set(value) {
+            sharedPreference?.edit()?.putString(Constant.KEY_LAST_WINTER_IMAGE, value!!)?.apply()
+        }
+
+    var lastSummerImage: String?
+        get() = sharedPreference?.getString(Constant.KEY_LAST_SUMMER_IMAGE, null)
+        set(value) {
+            sharedPreference?.edit()?.putString(Constant.KEY_LAST_SUMMER_IMAGE, value!!)?.apply()
+        }
 }

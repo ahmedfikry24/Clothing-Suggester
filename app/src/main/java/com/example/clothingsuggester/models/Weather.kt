@@ -1,7 +1,7 @@
 package com.example.clothingsuggester.models
 
 data class Weather(
-    val weather: List<WeatherStatus>,
+    val weatherState: List<WeatherStatus>,
     val temperature: Temperature,
 )
 

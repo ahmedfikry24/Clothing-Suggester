@@ -18,6 +18,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.view.isVisible
 import com.example.clothingsuggester.R
 import com.example.clothingsuggester.databinding.ActivityHomeBinding
+import com.example.clothingsuggester.models.Weather
 import com.example.clothingsuggester.utlis.Constant
 import com.example.clothingsuggester.utlis.SharedPrefManager
 import com.example.clothingsuggester.utlis.weatherParser
@@ -26,6 +27,8 @@ import com.google.android.gms.location.LocationServices
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
+import java.time.LocalDate
+import java.util.*
 
 class HomeActivity : AppCompatActivity() {
     private var binding: ActivityHomeBinding? = null
@@ -33,12 +36,15 @@ class HomeActivity : AppCompatActivity() {
     private val winterClothesList = mutableListOf<String>()
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private val client = OkHttpClient()
+    private val calendar = Calendar.getInstance()
 
 
     //shared pref values
     private var summerImageNumber: Int = 100
     private var winterImageNumber: Int = 0
     private var isSelectedImage = false
+    private var lastSummerImage = ""
+    private var lastWinterImage = ""
 
     //permissions
     private val requestMediaPermission =
@@ -80,6 +86,8 @@ class HomeActivity : AppCompatActivity() {
         summerImageNumber = SharedPrefManager.latSummerImageNumber!!
         winterImageNumber = SharedPrefManager.lastWinterImageNumber!!
         isSelectedImage = SharedPrefManager.isSelectedImage!!
+        lastSummerImage = SharedPrefManager.lastSummerImage ?: ""
+        lastWinterImage = SharedPrefManager.lastWinterImage ?: ""
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this@HomeActivity)
     }
 
@@ -230,17 +238,86 @@ class HomeActivity : AppCompatActivity() {
         val request = Request.Builder().url(url).build()
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Toast.makeText(this@HomeActivity , "${e.message}",Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@HomeActivity, "${e.message}", Toast.LENGTH_SHORT).show()
             }
 
             override fun onResponse(call: Call, response: Response) {
                 response.body?.string().let {
                     val responseResult = JSONObject(it!!).weatherParser()
+                    runOnUiThread {
+                        bindingResponseData(responseResult)
+                    }
                 }
             }
 
         })
     }
+
+    private fun convertKelvinToCelsius(kelvin: Double): Double {
+        return kelvin - 273.15
+    }
+
+    private fun getAverageTemperature(temp_min: Double, temp_max: Double): Int {
+
+        return convertKelvinToCelsius(temp_min).plus(convertKelvinToCelsius(temp_max)).div(2)
+            .toInt()
+    }
+
+    private fun bindingResponseData(weather: Weather) {
+
+        val averageTemp = getAverageTemperature(
+            weather.temperature.temp_min,
+            weather.temperature.temp_max
+        )
+        binding?.apply {
+            weatherStatus.text = weather.weatherState[0].status
+            weatherDay.text = LocalDate.now().dayOfWeek.name.lowercase()
+            weatherTemp.text = averageTemp.toString()
+        }
+
+        getTheSuitableClothes(averageTemp)
+    }
+
+    private fun getTheSuitableClothes(temperature: Int) {
+        when (temperature) {
+            in 0..20 -> {
+                binding?.apply {
+                    mainConstraint.setBackgroundResource(R.drawable.shape_winter_background)
+                    weatherIcon.setBackgroundResource(R.drawable.raining)
+                    if (winterClothesList.isNotEmpty()) {
+                        var randomImage: String
+                        do {
+                            randomImage = winterClothesList.random()
+                            clothesImage.setImageURI(Uri.parse(randomImage))
+
+                        } while (randomImage == lastWinterImage)
+
+                        SharedPrefManager.lastWinterImage = randomImage
+                    }
+                }
+            }
+
+            else -> {
+                binding?.apply {
+                    mainConstraint.setBackgroundResource(R.drawable.shape_summer_background)
+                    weatherIcon.setBackgroundResource(R.drawable.sunny)
+                    if (summerClothesList.isNotEmpty()) {
+                        var randomImage: String
+                        do {
+                            randomImage = summerClothesList.random()
+                            println(randomImage)
+                            clothesImage.setImageURI(Uri.parse(randomImage))
+
+                        } while (randomImage == lastSummerImage)
+
+                        SharedPrefManager.lastSummerImage = randomImage
+                    }
+                }
+
+            }
+        }
+    }
+
     override fun onDestroy() {
         binding = null
         super.onDestroy()
