@@ -35,7 +35,6 @@ class HomeActivity : AppCompatActivity() {
     private val winterClothesList = mutableListOf<String>()
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private val client = OkHttpClient()
-    private var weather: Weather? = null
 
     //shared pref values
     private var summerImageNumber: Int = 100
@@ -50,6 +49,8 @@ class HomeActivity : AppCompatActivity() {
 
     private val requestLocationPermission =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
+    var locationManager : LocationManager? = null
+
 
     // image pickers
     private var summerImagePicker =
@@ -89,6 +90,7 @@ class HomeActivity : AppCompatActivity() {
         lastSummerImage = SharedPrefManager.lastSummerImage ?: ""
         lastWinterImage = SharedPrefManager.lastWinterImage ?: ""
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this@HomeActivity)
+       locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
     }
 
     private fun isSelectedImageBefore(): Boolean {
@@ -190,11 +192,8 @@ class HomeActivity : AppCompatActivity() {
 
     private fun checkGpsEnabled() {
         if (checkLocationPermission()) {
-            val locationManager =
-                getSystemService(Context.LOCATION_SERVICE) as LocationManager
-            if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-                startActivity(intent)
+            if (!locationManager!!.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                enableGPS()
             } else {
                 getCurrentLocation()
             }
@@ -205,7 +204,16 @@ class HomeActivity : AppCompatActivity() {
                     android.Manifest.permission.ACCESS_FINE_LOCATION,
                 )
             )
+            if (!locationManager!!.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                enableGPS()
+            }
+
         }
+    }
+
+    private fun enableGPS() {
+        val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+        startActivity(intent)
     }
 
     override fun onResume() {
@@ -242,9 +250,9 @@ class HomeActivity : AppCompatActivity() {
 
             override fun onResponse(call: Call, response: Response) {
                 response.body?.string().let {
-                    weather = JSONObject(it!!).weatherParser()
+                    val result = JSONObject(it!!).weatherParser()
                     runOnUiThread {
-                        bindingResponseData(weather!!)
+                        bindingResponseData(result)
                     }
                 }
             }
