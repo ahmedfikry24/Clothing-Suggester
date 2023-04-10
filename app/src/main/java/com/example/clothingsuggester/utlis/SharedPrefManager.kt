@@ -39,4 +39,10 @@ object SharedPrefManager {
         set(value) {
             sharedPreference?.edit()?.putString(Constant.KEY_LAST_SUMMER_IMAGE, value!!)?.apply()
         }
+
+    var lastDay: Long?
+        get() = sharedPreference?.getLong(Constant.KEY_LAST_SUMMER_IMAGE, 0)
+        set(value) {
+            sharedPreference?.edit()?.putLong(Constant.KEY_LAST_SUMMER_IMAGE, value!!)?.apply()
+        }
 }
