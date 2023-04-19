@@ -154,7 +154,6 @@ class HomeActivity : AppCompatActivity() {
             winterImageNumber = SharedPrefManager.lastWinterImageNumber!!
             saveDate()
             showToast()
-            loadClothes()
         } else {
             SharedPrefManager.getInit(this@HomeActivity).edit().putString(
                 summerImageNumber.toString(),
@@ -164,7 +163,6 @@ class HomeActivity : AppCompatActivity() {
             summerImageNumber = SharedPrefManager.latSummerImageNumber!!
             saveDate()
             showToast()
-            loadClothes()
         }
         if (!isSelectedImage) SharedPrefManager.isSelectedImage = true
     }
