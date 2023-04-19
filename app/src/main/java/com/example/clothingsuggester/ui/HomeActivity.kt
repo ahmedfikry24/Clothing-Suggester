@@ -2,7 +2,6 @@ package com.example.clothingsuggester.ui
 
 import android.app.AlertDialog
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
@@ -17,31 +16,36 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.view.isVisible
 import com.example.clothingsuggester.R
+import com.example.clothingsuggester.api.ApiManager
 import com.example.clothingsuggester.databinding.ActivityHomeBinding
 import com.example.clothingsuggester.models.Weather
-import com.example.clothingsuggester.utlis.Constant
 import com.example.clothingsuggester.utlis.SharedPrefManager
 import com.example.clothingsuggester.utlis.weatherParser
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import okhttp3.*
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.Response
 import org.json.JSONObject
 import java.io.IOException
 import java.time.LocalDate
+import java.util.*
 
 class HomeActivity : AppCompatActivity() {
     private var binding: ActivityHomeBinding? = null
     private val summerClothesList = mutableListOf<String>()
     private val winterClothesList = mutableListOf<String>()
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private val client = OkHttpClient()
+    private val calendar = Calendar.getInstance()
+    private var currentDay: Long = 0
 
     //shared pref values
-    private var summerImageNumber: Int = 100
-    private var winterImageNumber: Int = 0
+    private var summerImageNumber = 100
+    private var winterImageNumber = 0
     private var isSelectedImage = false
     private var lastSummerImage = ""
     private var lastWinterImage = ""
+    private var lastDay: Long = 0
 
     //permissions
     private val requestMediaPermission =
@@ -49,7 +53,7 @@ class HomeActivity : AppCompatActivity() {
 
     private val requestLocationPermission =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
-    var locationManager : LocationManager? = null
+    private var locationManager: LocationManager? = null
 
 
     // image pickers
@@ -77,6 +81,7 @@ class HomeActivity : AppCompatActivity() {
         setContentView(binding!!.root)
 
         initValues()
+        getCurrentDate()
         checkGpsEnabled()
         isSelectedImageBefore()
         initOnClickListeners()
@@ -89,8 +94,9 @@ class HomeActivity : AppCompatActivity() {
         isSelectedImage = SharedPrefManager.isSelectedImage!!
         lastSummerImage = SharedPrefManager.lastSummerImage ?: ""
         lastWinterImage = SharedPrefManager.lastWinterImage ?: ""
+        lastDay = SharedPrefManager.lastDay!!
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this@HomeActivity)
-       locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
     }
 
     private fun isSelectedImageBefore(): Boolean {
@@ -118,19 +124,19 @@ class HomeActivity : AppCompatActivity() {
                 val dialog = AlertDialog.Builder(this@HomeActivity)
                 dialog.setTitle("clothes category")
                     .setMessage("please select category what you want to add .")
-                    .setPositiveButton("Summer", DialogInterface.OnClickListener { dialog, id ->
+                    .setPositiveButton("Summer") { _, _ ->
                         summerImagePicker.launch(
                             PickVisualMediaRequest(
                                 ActivityResultContracts.PickVisualMedia.ImageOnly
                             )
                         )
-                    }).setNegativeButton("Winter", DialogInterface.OnClickListener { dialog, id ->
+                    }.setNegativeButton("Winter") { _, _ ->
                         winterImagePicker.launch(
                             PickVisualMediaRequest(
                                 ActivityResultContracts.PickVisualMedia.ImageOnly
                             )
                         )
-                    })
+                    }
                 dialog.show()
             } else {
                 requestMediaPermission.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -146,6 +152,7 @@ class HomeActivity : AppCompatActivity() {
             ).apply()
             SharedPrefManager.lastWinterImageNumber = winterImageNumber + 1
             winterImageNumber = SharedPrefManager.lastWinterImageNumber!!
+            saveDate()
             showToast()
             loadClothes()
         } else {
@@ -155,9 +162,9 @@ class HomeActivity : AppCompatActivity() {
             ).apply()
             SharedPrefManager.latSummerImageNumber = summerImageNumber + 1
             summerImageNumber = SharedPrefManager.latSummerImageNumber!!
+            saveDate()
             showToast()
             loadClothes()
-
         }
         if (!isSelectedImage) SharedPrefManager.isSelectedImage = true
     }
@@ -172,8 +179,23 @@ class HomeActivity : AppCompatActivity() {
             val image =
                 SharedPrefManager.getInit(this@HomeActivity).getString(i.toString(), null)
             if (!image.isNullOrBlank() && image != lastWinterImage) winterClothesList.add(image)
-            println(image)
         }
+    }
+
+    private fun getCurrentDate() {
+        calendar.set(Calendar.HOUR, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        currentDay = calendar.timeInMillis
+    }
+
+    private fun saveDate() {
+        calendar.set(Calendar.HOUR, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        SharedPrefManager.lastDay = calendar.timeInMillis
     }
 
     private fun showToast() {
@@ -226,37 +248,35 @@ class HomeActivity : AppCompatActivity() {
             fusedLocationClient.lastLocation
                 .addOnSuccessListener { location: Location? ->
                     if (location != null) {
-                        getCurrentWeather(location.latitude, location.longitude)
+                        val callback = object : Callback {
+                            override fun onFailure(call: Call, e: IOException) {
+                                runOnUiThread {
+                                    Toast.makeText(
+                                        this@HomeActivity,
+                                        "something wrong please try again later",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+
+                            override fun onResponse(call: Call, response: Response) {
+                                response.body?.string().let {
+                                    val result = JSONObject(it!!).weatherParser()
+                                    runOnUiThread {
+                                        bindingResponseData(result)
+                                    }
+                                }
+                            }
+
+                        }
+                        ApiManager().getCurrentWeather(
+                            location.latitude,
+                            location.longitude,
+                            callback
+                        )
                     }
                 }
         }
-    }
-
-    private fun getCurrentWeather(Latitude: Double, Longitude: Double) {
-        val url = HttpUrl.Builder()
-            .scheme("https")
-            .host("api.openweathermap.org")
-            .addPathSegment("/data/2.5/weather")
-            .addQueryParameter("lat", "$Latitude")
-            .addQueryParameter("lon", "$Longitude")
-            .addQueryParameter("appid", Constant.API_OPEN_WEATHER_KEY)
-            .build()
-
-        val request = Request.Builder().url(url).build()
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                Toast.makeText(this@HomeActivity, "${e.message}", Toast.LENGTH_SHORT).show()
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                response.body?.string().let {
-                    val result = JSONObject(it!!).weatherParser()
-                    runOnUiThread {
-                        bindingResponseData(result)
-                    }
-                }
-            }
-        })
     }
 
     private fun convertKelvinToCelsius(kelvin: Double): Double {
@@ -288,10 +308,14 @@ class HomeActivity : AppCompatActivity() {
                 binding?.apply {
                     mainConstraint.setBackgroundResource(R.drawable.shape_winter_background)
                     weatherIcon.setBackgroundResource(R.drawable.raining)
-                    if (winterClothesList.isNotEmpty()) {
-                        val randomImage = winterClothesList.shuffled()[0]
-                        clothesImage.setImageURI(Uri.parse(randomImage))
-                        SharedPrefManager.lastWinterImage = randomImage
+                    if (currentDay == lastDay) {
+                        clothesImage.setImageURI(Uri.parse(lastWinterImage))
+                    } else {
+                        if (winterClothesList.isNotEmpty()) {
+                            val randomImage = winterClothesList.shuffled()[0]
+                            clothesImage.setImageURI(Uri.parse(randomImage))
+                            SharedPrefManager.lastWinterImage = randomImage
+                        }
                     }
                 }
             }
@@ -300,10 +324,14 @@ class HomeActivity : AppCompatActivity() {
                 binding?.apply {
                     mainConstraint.setBackgroundResource(R.drawable.shape_summer_background)
                     weatherIcon.setBackgroundResource(R.drawable.sunny)
-                    if (summerClothesList.isNotEmpty()) {
-                        val randomImage = summerClothesList.shuffled()[0]
-                        clothesImage.setImageURI(Uri.parse(randomImage))
-                        SharedPrefManager.lastSummerImage = randomImage
+                    if (currentDay == lastDay) {
+                        clothesImage.setImageURI(Uri.parse(lastSummerImage))
+                    } else {
+                        if (summerClothesList.isNotEmpty()) {
+                            val randomImage = summerClothesList.shuffled()[0]
+                            clothesImage.setImageURI(Uri.parse(randomImage))
+                            SharedPrefManager.lastSummerImage = randomImage
+                        }
                     }
                 }
             }
