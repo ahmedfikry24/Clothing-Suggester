@@ -152,6 +152,7 @@ class HomeActivity : AppCompatActivity() {
             ).apply()
             SharedPrefManager.lastWinterImageNumber = winterImageNumber + 1
             winterImageNumber = SharedPrefManager.lastWinterImageNumber!!
+            SharedPrefManager.lastWinterImage = image.toString()
             saveDate()
             showToast()
         } else {
@@ -161,6 +162,7 @@ class HomeActivity : AppCompatActivity() {
             ).apply()
             SharedPrefManager.latSummerImageNumber = summerImageNumber + 1
             summerImageNumber = SharedPrefManager.latSummerImageNumber!!
+            SharedPrefManager.lastSummerImage = image.toString()
             saveDate()
             showToast()
         }
@@ -313,6 +315,7 @@ class HomeActivity : AppCompatActivity() {
                             val randomImage = winterClothesList.shuffled()[0]
                             clothesImage.setImageURI(Uri.parse(randomImage))
                             SharedPrefManager.lastWinterImage = randomImage
+                            saveDate()
                         }
                     }
                 }
@@ -329,6 +332,7 @@ class HomeActivity : AppCompatActivity() {
                             val randomImage = summerClothesList.shuffled()[0]
                             clothesImage.setImageURI(Uri.parse(randomImage))
                             SharedPrefManager.lastSummerImage = randomImage
+                            saveDate()
                         }
                     }
                 }
